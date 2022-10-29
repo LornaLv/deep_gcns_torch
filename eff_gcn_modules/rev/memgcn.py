@@ -21,14 +21,16 @@ class GroupAdditiveCoupling(torch.nn.Module):
         xs = torch.chunk(x, self.group, dim=self.split_dim)
         chunked_args = list(map(lambda arg: torch.chunk(arg, self.group, dim=self.split_dim), args))
         args_chunks = list(zip(*chunked_args))
-        # y_in对应于X0′，[1:]意思是去掉列表中第一个元素（下标为0）
-        y_in = 3 * sum(xs[1:])
+        # y_in对应于X0′
+        y_in = 2 * sum(xs[1:])
         # y_in = sum(xs[1:])
 
         ys = []
         for i in range(self.group):
             Fmd = self.Fms[i].forward(y_in, edge_index, *args_chunks[i])
             # y对应于Xi′
+            # xs[i]加系数
+            # y = 2 * xs[i] + Fmd
             y = xs[i] + Fmd
             y_in = y
             ys.append(y)
@@ -47,9 +49,11 @@ class GroupAdditiveCoupling(torch.nn.Module):
             if i != 0:
                 y_in = ys[i-1]
             else:
-                y_in = sum(xs)
+                y_in = sum(xs)/2
+                # y_in = sum(xs)
 
             Fmd = self.Fms[i].forward(y_in, edge_index, *args_chunks[i])
+            # x = (ys[i] - Fmd)/2
             x = ys[i] - Fmd
             xs.append(x)
 
